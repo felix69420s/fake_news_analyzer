@@ -62,12 +62,12 @@ emotion_labels = parse_cell(row.get("emotion_labels"))
 manipulation_flags = parse_cell(row.get("manipulation_flags"))
 manipulation_matches = parse_cell(row.get("manipulation_matches"))
 
-print("=" * 100)
+
 print("АНАЛИЗ ФЕЙКОВОЙ НОВОСТИ")
-print("=" * 100)
+
 
 print("\n1. ИСХОДНЫЕ ДАННЫЕ")
-print("-" * 100)
+
 print("ID:", row.get("id"))
 print("LABEL:", row.get("label"))
 print("TITLE:", row.get("title"))
@@ -75,7 +75,7 @@ print("\nTEXT:")
 print(short_text(row.get("text"), 1500))
 
 print("\n2. ИЗВЛЕЧЁННЫЕ СУЩНОСТИ")
-print("-" * 100)
+
 print("Персоны:", persons)
 print("Организации:", organizations)
 print("Локации:", locations)
@@ -85,7 +85,7 @@ print("\nВсе найденные сущности:")
 print(named_entities)
 
 print("\n3. ЭМОЦИОНАЛЬНЫЙ ПРОФИЛЬ")
-print("-" * 100)
+
 print("Тональность:", row.get("sentiment_label"))
 print("Оценка тональности:", row.get("sentiment_score"))
 print("Доминирующая эмоция:", row.get("dominant_emotion"))
@@ -93,7 +93,7 @@ print("Все эмоции:", emotion_labels)
 print("Оценки эмоций:", emotion_scores)
 
 print("\n4. ЛИНГВИСТИЧЕСКИЕ ПРИЗНАКИ МАНИПУЛЯЦИИ")
-print("-" * 100)
+
 print("Флаги манипуляции:")
 print(manipulation_flags)
 
