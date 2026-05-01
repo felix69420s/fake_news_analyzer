@@ -1,0 +1,12 @@
+pandas
+numpy
+datasets
+transformers
+torch
+tqdm
+pydantic
+python-dotenv
+razdel
+beautifulsoup4
+lxml
+pytest
