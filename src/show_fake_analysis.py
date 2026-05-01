@@ -3,7 +3,7 @@ import json
 import ast
 
 
-CSV_PATH = "data/processed/baiangali_ru_100.csv"
+CSV_PATH = "data/processed/baiangali.csv"
 
 
 def parse_cell(value):
@@ -120,8 +120,3 @@ if persons or organizations or locations or geopolitical_entities:
     print("В тексте обнаружены упоминания субъектов и объектов новости.")
 else:
     print("Именованные сущности в выбранной записи не обнаружены или не распознаны моделью.")
-
-print(
-    "Важно: эти признаки не доказывают фейковость новости. "
-    "Метка fake взята из исходного размеченного датасета."
-)
