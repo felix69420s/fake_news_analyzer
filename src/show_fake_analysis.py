@@ -75,8 +75,6 @@ print("Тональность:", row.get("sentiment_label"))
 print("Оценка тональности:", row.get("sentiment_score"))
 
 print("\n4. ЛИНГВИСТИЧЕСКИЕ ПРИЗНАКИ МАНИПУЛЯЦИИ")
-print("Метод:", row.get("manipulation_method"))
-print("Модель:", row.get("manipulation_model"))
 print("Порог:", row.get("manipulation_threshold"))
 print("Флаги:")
 print(manipulation_flags)

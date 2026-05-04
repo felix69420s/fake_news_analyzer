@@ -2,7 +2,7 @@
 
 Проект разработан для курсовой работы по теме анализа фейковых новостей и автоматизированной обработки медиатекстов.
 
-## Назначение проекта
+## Назначение
 
 `Fake News Analyzer` формирует аналитический датасет признаков по размеченным русскоязычным новостным текстам. Проект не выполняет самостоятельный фактчекинг: метка `fake/real` берётся из исходного датасета.
 
@@ -53,13 +53,6 @@ data/raw/fake_real_news_ru/train_bodies.csv
 data/raw/fake_real_news_ru/train_stances.csv
 ```
 
-Особенности:
-
-- большой корпус новостей Lenta.ru;
-- не содержит разметки `fake/real`;
-- используется для проверки работы предобработки и извлечения признаков на большом корпусе новостных текстов;
-- не используется как основной датасет для анализа фейковых новостей.
-
 ## Используемые модели Hugging Face
 
 ### NER
@@ -68,393 +61,87 @@ data/raw/fake_real_news_ru/train_stances.csv
 r1char9/ner-rubert-tiny-news
 ```
 
-Используется для извлечения именованных сущностей.
-
-### Emotion
-
-```text
-cointegrated/rubert-tiny2-cedr-emotion-detection
-```
-
-Используется для определения эмоционального профиля текста.
-
 ### Sentiment
 
 ```text
 blanchefort/rubert-base-cased-sentiment-rusentiment
 ```
 
-Используется для определения тональности текста.
-
-### Манипулятивные признаки
-
-Признаки манипулятивности реализованы rule-based способом, без отдельной ML-модели.  
-Это сделано для интерпретируемости: каждое срабатывание связано с конкретным словом, фразой или регулярным выражением.
-
-## Структура проекта
+### Манипулятивные лингвистические признаки
 
 ```text
-fake_news_analyzer/
-├── data/
-│   ├── raw/
-│   ├── interim/
-│   └── processed/
-├── src/
-│   ├── __init__.py
-│   ├── config.py
-│   ├── schemas.py
-│   ├── dataset_loader.py
-│   ├── dataset_adapters.py
-│   ├── text_cleaning.py
-│   ├── hf_models.py
-│   ├── ner_features.py
-│   ├── emotion_features.py
-│   ├── manipulation_features.py
-│   ├── feature_pipeline.py
-│   ├── dataset_builder.py
-│   ├── main.py
-│   └── show_fake_analysis.py
-├── requirements.txt
-├── README.md
-└── .gitignore
+MoritzLaurer/mDeBERTa-v3-base-mnli-xnli
 ```
 
-## Назначение основных файлов
+Модель используется в режиме zero-shot classification. Она возвращает вероятностные признаки, а не доказывает факт фейковости новости.
 
-### `src/config.py`
+Категории анализа:
 
-Хранит настройки проекта:
+- апелляция к страху;
+- эмоционально нагруженная лексика;
+- сенсационная подача;
+- неопределённый источник информации;
+- категоричное обобщение;
+- давление к немедленному действию;
 
-- пути к папкам данных;
-- названия моделей Hugging Face;
-- названия датасетов;
-- путь к выходному файлу по умолчанию.
-
-### `src/schemas.py`
-
-Описывает входную и выходную структуру данных через Pydantic-модели.
-
-### `src/dataset_loader.py`
-
-Отвечает за загрузку данных:
-
-- из Hugging Face;
-- из локальных файлов `.csv`, `.json`, `.jsonl`, `.parquet`.
-
-### `src/dataset_adapters.py`
-
-Приводит разные датасеты к единой структуре проекта.
-
-Также содержит фильтрацию русскоязычных записей для датасета `baiangali/fake_news`.
-
-### `src/text_cleaning.py`
-
-Выполняет очистку и нормализацию текста:
-
-- удаление HTML;
-- нормализация пробелов;
-- сборка полного текста новости;
-- подсчёт символов;
-- примерный подсчёт токенов;
-- вычисление хэша текста.
-
-### `src/hf_models.py`
-
-Централизованно загружает модели Hugging Face.
-
-Модели загружаются лениво, то есть только в момент первого использования.
-
-### `src/ner_features.py`
-
-Извлекает именованные сущности:
-
-- персоны;
-- организации;
-- локации;
-- геополитические объекты;
-- медиа-сущности.
-
-### `src/emotion_features.py`
-
-Извлекает эмоциональный профиль:
-
-- тональность;
-- score тональности;
-- список эмоций;
-- score эмоций;
-- доминирующую эмоцию.
-
-### `src/manipulation_features.py`
-
-Ищет признаки манипулятивности по словарям и регулярным выражениям.
-
-### `src/feature_pipeline.py`
-
-Объединяет все этапы обработки одной новости.
-
-### `src/dataset_builder.py`
-
-Обрабатывает список новостей и сохраняет итоговый аналитический датасет.
-
-### `src/main.py`
-
-Главная точка запуска проекта из терминала.
-
-### `src/show_fake_analysis.py`
-
-Демонстрационный скрипт.  
-Показывает разбор одной фейковой новости:
-
-- исходный текст;
-- найденные сущности;
-- эмоциональный профиль;
-- признаки манипуляции.
-
-## Установка проекта
-
-### 1. Клонировать репозиторий
-
-```powershell
-git clone https://github.com/felix69420s/fake_news_analyzer.git
-cd fake_news_analyzer
-```
-
-Если проект уже скачан вручную, достаточно перейти в папку проекта:
-
-```powershell
-cd C:\Users\katya\fake_news_analyzer
-```
-
-### 2. Создать виртуальное окружение
+## Установка
 
 ```powershell
 python -m venv .venv
-```
-
-### 3. Активировать виртуальное окружение
-
-```powershell
 .venv\Scripts\Activate.ps1
-```
-
-### 4. Установить зависимости
-
-```powershell
 pip install -r requirements.txt
 ```
 
+## Получение датасета
 
-## Получение датасетов
-
-Датасеты не включены в репозиторий, потому что они могут занимать много места.  
-Их нужно скачать отдельно в папку `data/raw/`.
-
-## Получение основного датасета Baiangali
-
-### Скачать через PowerShell
-
-Выполнить из корня проекта:
-
-```powershell
-New-Item -ItemType Directory -Force data\raw\baiangali_fake_news
-
-Invoke-WebRequest `
-  -Uri "https://raw.githubusercontent.com/baiangali/fake_news/main/fake_real_news_annotated.json" `
-  -OutFile "data\raw\baiangali_fake_news\fake_real_news_annotated.json"
-```
-
-После скачивания проверить файл:
-
-```powershell
-Get-Item data\raw\baiangali_fake_news\fake_real_news_annotated.json
-```
-
-## Получение дополнительного датасета Lenta
-
-Датасет Lenta можно не скачивать вручную.  
-При первом запуске он будет загружен через библиотеку `datasets` и сохранён в локальный кэш Hugging Face.
-
-Запуск:
-
-```powershell
-python -m src.main --dataset lenta --limit 50 --output data/processed/lenta_50.csv
-```
-
-## Запуск проекта
-
-## 1. Запуск основного датасета Baiangali
-
-Перед запуском убедиться, что файл существует:
+Скачать датасет с Kaggle вручную и положить файлы в папку:
 
 ```text
-data/raw/baiangali_fake_news/fake_real_news_annotated.json
+data/raw/fake_real_news_ru/
 ```
 
-Команда запуска:
+Рекомендуемый вариант структуры:
+
+```text
+data/raw/fake_real_news_ru/train_bodies.csv
+data/raw/fake_real_news_ru/train_stances.csv
+```
+
+## Запуск
+
+### Рабочий запуск на 50 записях
 
 ```powershell
-python -m src.main --dataset local --local-path data/raw/baiangali_fake_news/fake_real_news_annotated.json --local-adapter baiangali --limit 50 --output data/processed/baiangali_ru_50.csv
+python -m src.main --data-path data/raw/fake_real_news_ru --limit 50 --output data/processed/kaggle_ru_analytical_dataset.csv
+```
+
+### Запуск с извлечением фрагментов-оснований
+
+Этот режим медленнее, потому что дополнительно анализирует отдельные предложения.
+
+```powershell
+python -m src.main --data-path data/raw/fake_real_news_ru --limit 50 --include-evidence --output data/processed/kaggle_ru_analytical_dataset.csv
 ```
 
 
-## 2. Демонстрация анализа одной фейковой новости
-
-После запуска Baiangali выполнить:
+## Демонстрация разбора одной фейковой новости
 
 ```powershell
 python src/show_fake_analysis.py
 ```
 
-Скрипт выводит:
+## Основные выходные поля
 
-1. исходный текст фейковой новости;
-2. найденные персоны, организации и локации;
-3. эмоциональный профиль;
-4. признаки манипуляции;
-5. краткий вывод.
-
-## Проверка результата
-
-### Проверить распределение меток
-
-```powershell
-python -c "import pandas as pd; df=pd.read_csv('data/processed/baiangali.csv'); print(df['label'].value_counts(dropna=False))"
-```
-
-### Проверить эмоциональные признаки
-
-```powershell
-python -c "import pandas as pd; df=pd.read_csv('data/processed/baiangali.csv'); print(df[['label','sentiment_label','sentiment_score','dominant_emotion','manipulation_score']].head().to_string())"
-```
-
-## Выходная структура данных
-
-Итоговый датасет содержит следующие поля:
-
-```text
-id
-date
-source
-source_type
-url
-author
-language
-label
-title
-lead
-text
-full_text
-normalized_text
-text_hash
-char_count
-token_count_approx
-named_entities
-persons
-organizations
-locations
-geopolitical_entities
-media_entities
-persons_count
-organizations_count
-locations_count
-geopolitical_count
-media_count
-sentiment_label
-sentiment_score
-emotion_labels
-emotion_scores
-dominant_emotion
-manipulation_flags
-manipulation_matches
-manipulation_score
-```
-
-## Что означают основные поля
-
-### `label`
-
-Метка из исходного датасета:
-
-```text
-fake
-real
-```
-
-Проект не создаёт эту метку самостоятельно.
-
-### `named_entities`
-
-Полный список найденных именованных сущностей.
-
-### `persons`
-
-Список найденных персон.
-
-### `organizations`
-
-Список найденных организаций.
-
-### `locations`
-
-Список найденных локаций.
-
-### `geopolitical_entities`
-
-Список геополитических объектов.
-
-### `sentiment_label`
-
-Метка тональности текста.
-
-### `sentiment_score`
-
-Оценка уверенности модели в тональности.
-
-### `emotion_labels`
-
-Список эмоций, возвращённых моделью.
-
-### `emotion_scores`
-
-Оценки эмоций.
-
-### `dominant_emotion`
-
-Эмоция с наибольшей оценкой.
-
-### `manipulation_flags`
-
-Словарь с признаками манипулятивности.
-
-Пример:
-
-```text
-{
-  "fear_appeal": true,
-  "sensationalism": false,
-  "vague_sources": true
-}
-```
-
-### `manipulation_matches`
-
-Конкретные слова и фразы, из-за которых сработали признаки.
-
-### `manipulation_score`
-
-Количество найденных категорий манипулятивности.
-
-Например:
-
-```text
-0
-```
-
-означает, что признаки не найдены.
-
-```text
-3
-```
-
-означает, что найдено три категории признаков.
-
+- `id` — идентификатор новости;
+- `label` — метка из датасета: `fake` или `real`;
+- `title` — заголовок;
+- `text` — исходный текст;
+- `normalized_text` — нормализованный текст;
+- `named_entities` — найденные именованные сущности;
+- `persons`, `organizations`, `locations`, `geopolitical_entities`, `media_entities` — сгруппированные сущности;
+- `sentiment_label`, `sentiment_score` — тональность;
+- `manipulation_flags` — бинарные признаки манипулятивной подачи по порогу;
+- `manipulation_scores` — оценки zero-shot модели;
+- `manipulation_score` — количество активных категорий;
+- `manipulation_model` — модель, применённая для анализа;
+- `manipulation_evidence_sentences` — фрагменты-основания, если включён `--include-evidence`.
