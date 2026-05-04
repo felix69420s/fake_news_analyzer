@@ -1,7 +1,5 @@
 from razdel import sentenize
 
-from src.config import MANIPULATION_MODEL_NAME
-
 
 MANIPULATION_LABELS: dict[str, str] = {
     "fear_appeal": "апелляция к страху",
@@ -99,7 +97,6 @@ def extract_manipulation_features(
         "manipulation_score": 0,
         "manipulation_threshold": threshold,
         "manipulation_evidence_sentences": {},
-        "manipulation_matches": {},
     }
 
     if not base_text.strip():
@@ -131,18 +128,10 @@ def extract_manipulation_features(
             max_sentences=max_evidence_sentences,
         )
 
-    # Compatibility field for older demonstration scripts.
-    matches = {
-        key: [item["sentence"] for item in value]
-        for key, value in evidence.items()
-        if isinstance(value, list)
-    }
-
     return {
         "manipulation_flags": flags,
         "manipulation_scores": scores,
         "manipulation_score": sum(1 for value in flags.values() if value),
         "manipulation_threshold": threshold,
         "manipulation_evidence_sentences": evidence,
-        "manipulation_matches": matches,
     }
