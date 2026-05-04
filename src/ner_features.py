@@ -33,6 +33,28 @@ def deduplicate_entities(items: list[str]) -> list[str]:
             result.append(item)
     return result
 
+def is_valid_entity(text: str, score: float, min_score: float = 0.80) -> bool:
+    text = (text or "").strip()
+
+    if score < min_score:
+        return False
+
+    if len(text) < 2:
+        return False
+
+    if all(not ch.isalnum() for ch in text):
+        return False
+
+    if text in {"'", '"', "[", "]", "(", ")", ",", ".", ":", ";", "-", "—"}:
+        return False
+
+    if any(ch in text for ch in ["[", "]", "{", "}", "['", "']"]):
+        return False
+
+    if text.startswith("##"):
+        return False
+
+    return True
 
 def extract_ner_features(text: str, model_manager) -> dict:
     empty_result = {
@@ -78,13 +100,15 @@ def extract_ner_features(text: str, model_manager) -> dict:
 
         raw_label = str(entity.get("entity_group", entity.get("entity", "")))
         label = normalize_entity_group(raw_label)
-
-        score_raw = entity.get("score", 0.0)
+    
         try:
-            score = float(score_raw)
+            score = float(entity.get("score", 0.0))
         except Exception:
             score = 0.0
-
+    
+        if not is_valid_entity(entity_text, score):
+            continue
+    
         named_entities.append({"text": entity_text, "label": label, "score": score})
 
         if label == "PER":

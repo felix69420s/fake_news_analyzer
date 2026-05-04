@@ -11,12 +11,14 @@ KAGGLE_DATASET_DIR = RAW_DATA_DIR / "fake_real_news_ru"
 KAGGLE_DATASET_URL = "https://www.kaggle.com/datasets/morfifinka/fake-real-news-ru"
 
 NER_MODEL_NAME = "r1char9/ner-rubert-tiny-news"
-EMOTION_MODEL_NAME = "cointegrated/rubert-tiny2-cedr-emotion-detection"
 SENTIMENT_MODEL_NAME = "blanchefort/rubert-base-cased-sentiment-rusentiment"
+MANIPULATION_MODEL_NAME = "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"
 
 DEFAULT_LANGUAGE = "ru"
-DEFAULT_OUTPUT_FILE = PROCESSED_DATA_DIR / "analytical_dataset.csv"
-DEFAULT_LIMIT = 100
+DEFAULT_OUTPUT_FILE = PROCESSED_DATA_DIR / "kaggle_ru_analytical_dataset.csv"
+DEFAULT_LIMIT = 50
+DEFAULT_MANIPULATION_THRESHOLD = 0.70
+DEFAULT_MANIPULATION_MAX_CHARS = 1500
 
 
 def ensure_dirs() -> None:

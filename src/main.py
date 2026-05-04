@@ -3,9 +3,10 @@ from pathlib import Path
 
 from src.config import (
     DEFAULT_LIMIT,
+    DEFAULT_MANIPULATION_MAX_CHARS,
+    DEFAULT_MANIPULATION_THRESHOLD,
     DEFAULT_OUTPUT_FILE,
-    LENTA_DATASET_NAME,
-    MAIN_DATASET_NAME,
+    KAGGLE_DATASET_DIR,
     ensure_dirs,
 )
 from src.dataset_adapters import adapt_dataset
@@ -45,6 +46,23 @@ def build_parser() -> argparse.ArgumentParser:
         default=-1,
         help="Device for HF pipelines: -1 CPU, 0 GPU.",
     )
+    parser.add_argument(
+        "--manipulation-threshold",
+        type=float,
+        default=DEFAULT_MANIPULATION_THRESHOLD,
+        help=f"Zero-shot threshold for manipulation flags (default: {DEFAULT_MANIPULATION_THRESHOLD}).",
+    )
+    parser.add_argument(
+        "--manipulation-max-chars",
+        type=int,
+        default=DEFAULT_MANIPULATION_MAX_CHARS,
+        help=f"Max characters passed to the manipulation model (default: {DEFAULT_MANIPULATION_MAX_CHARS}).",
+    )
+    parser.add_argument(
+        "--include-evidence",
+        action="store_true",
+        help="Also extract example sentences for active manipulation categories. Slower.",
+    )
     return parser
 
 
@@ -73,6 +91,9 @@ def main() -> None:
         input_records=input_records,
         model_manager=model_manager,
         limit=args.limit,
+        manipulation_threshold=args.manipulation_threshold,
+        manipulation_max_chars=args.manipulation_max_chars,
+        include_evidence=args.include_evidence,
     )
 
     output_path = Path(args.output)

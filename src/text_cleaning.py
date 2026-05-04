@@ -1,17 +1,16 @@
 import hashlib
 import re
-
 from bs4 import BeautifulSoup
 from razdel import tokenize
 
 
 def clean_html(text: str) -> str:
-    soup = BeautifulSoup(text, "lxml")
+    soup = BeautifulSoup(text or "", "lxml")
     return soup.get_text(separator=" ")
 
 
 def normalize_spaces(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip()
+    return re.sub(r"\s+", " ", text or "").strip()
 
 
 def normalize_text(text: str) -> str:
@@ -33,11 +32,11 @@ def make_text_hash(text: str) -> str:
 
 
 def count_chars(text: str) -> int:
-    return len(text)
+    return len(text or "")
 
 
 def count_tokens_approx(text: str) -> int:
     try:
-        return sum(1 for _ in tokenize(text))
+        return sum(1 for _ in tokenize(text or ""))
     except Exception:
-        return len(text.split())
+        return len((text or "").split())

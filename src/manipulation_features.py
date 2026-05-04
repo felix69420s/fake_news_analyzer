@@ -1,189 +1,148 @@
-import re
+from razdel import sentenize
 
-# NOTE: These rules are heuristics and do not prove that a text is fake.
+from src.config import MANIPULATION_MODEL_NAME
 
-RULES_KEYWORDS: dict[str, list[str]] = {
-    "emotionally_charged": [
-        "ужас",
-        "кошмар",
-        "катастрофа",
-        "скандал",
-        "позор",
-        "предательство",
-        "жестокий",
-        "чудовищный",
-        "шокирующий",
-        "разгром",
-        "истерика",
-    ],
-    "fear_appeal": [
-        "опасность",
-        "угроза",
-        "страх",
-        "паника",
-        "катастрофические последствия",
-        "может погибнуть",
-        "грозит",
-        "рискует",
-        "под угрозой",
-        "налог",
-        "сбор",
-        "штраф",
-        "запрет",
-        "мобилизация",
-        "уголовная ответственность",
-        "лишение",
-        "опасно",
-        "угрожает",
-        "пострадают",
-    ],
-    "generalization": [
-        "все",
-        "никто",
-        "всегда",
-        "никогда",
-        "каждый",
-        "любой",
-        "везде",
-        "все знают",
-        "ни один",
-    ],
-    "sensationalism": [
-        "шок",
-        "срочно",
-        "сенсация",
-        "эксклюзив",
-        "невероятно",
-        "скандал",
-        "раскрыта правда",
-        "вся правда",
-        "то, что скрывали",
-    ],
-    "pressure": [
-        "немедленно",
-        "обязательно",
-        "срочно",
-        "нельзя медлить",
-        "прямо сейчас",
-        "вы должны",
-        "нужно срочно",
-        "надо срочно",
-        "требуется немедленно",
-        "до конца дня",
-        "иначе",
-    ],
-    "unverified_claims": [
-        "якобы",
-        "утверждается",
-        "сообщается",
-        "распространяется",
-        "в соцсетях",
-        "в социальных сетях",
-        "в мессенджерах",
-        "в telegram",
-        "в telegram-каналах",
-        "в телеграм",
-        "в телеграм-каналах",
-        "пользователи сообщают",
-        "очевидцы сообщают",
-        "без подтверждения",
-        "не подтверждена",
-        "неподтвержденная информация",
-        "неподтверждённая информация",
-        "по неподтвержденным данным",
-        "по неподтверждённым данным",
-    ],
-    "black_white": [
-        "только так",
-        "другого выбора нет",
-        "враг народа",
-        "предатели",
-        "патриоты против",
-    ],
+
+MANIPULATION_LABELS: dict[str, str] = {
+    "fear_appeal": "апелляция к страху",
+    "emotionally_charged": "эмоционально нагруженная лексика",
+    "sensationalism": "сенсационная подача",
+    "vague_source": "неопределённый источник информации",
+    "categorical_generalization": "категоричное обобщение",
+    "urgency_pressure": "давление к немедленному действию",
 }
 
-RULES_REGEX: dict[str, list[str]] = {
-    "vague_sources": [
-        r"\bэксперты считают\b",
-        r"\bисточники сообщают\b",
-        r"\bпо данным источников\b",
-        r"\bкак стало известно\b",
-        r"\bученые доказали\b",
-        r"\bврачи предупреждают\b",
-        r"\bаналитики заявили\b",
-        r"\bинсайдеры сообщили\b",
-        r"\bпо некоторым данным\b",
-        r"\bв сети сообщают\b",
-        r"\bв интернете пишут\b",
-        r"\bпоявилась информация\b",
-        r"\bпо сообщениям пользователей\b",
-        r"\bанонимные источники\b",
-        r"\bнеизвестные сообщили\b",
-    ],
-    "black_white": [
-        r"\bлибо\b.+\bлибо\b",
-        r"\bили\b.+\bили\b",
-    ],
-}
+HYPOTHESIS_TEMPLATE = "В данном новостном тексте присутствует {}."
 
 
-def normalize_for_rules(text: str) -> str:
-    lowered = (text or "").lower()
-    return re.sub(r"\s+", " ", lowered).strip()
+def _score_zero_shot(text: str, labels: list[str], classifier) -> dict[str, float]:
+    if not text.strip() or not labels:
+        return {}
+    result = classifier(
+        text,
+        candidate_labels=labels,
+        hypothesis_template=HYPOTHESIS_TEMPLATE,
+        multi_label=True,
+    )
+    raw_labels = result.get("labels", []) if isinstance(result, dict) else []
+    raw_scores = result.get("scores", []) if isinstance(result, dict) else []
+    scores: dict[str, float] = {}
+    for label, score in zip(raw_labels, raw_scores):
+        try:
+            scores[str(label)] = float(score)
+        except Exception:
+            scores[str(label)] = 0.0
+    return scores
 
 
-def find_keyword_matches(text: str, keywords: list[str]) -> list[str]:
-    normalized = normalize_for_rules(text)
-    matches: list[str] = []
-    for keyword in keywords:
-        pattern = r"\b" + re.escape(keyword.lower()) + r"\b"
-        if re.search(pattern, normalized) and keyword not in matches:
-            matches.append(keyword)
-    return matches
+def _split_sentences(text: str, max_sentences: int) -> list[str]:
+    sentences: list[str] = []
+    try:
+        for sentence in sentenize(text):
+            value = sentence.text.strip()
+            if len(value) >= 25:
+                sentences.append(value)
+            if len(sentences) >= max_sentences:
+                break
+    except Exception:
+        sentences = [part.strip() for part in text.split(".") if len(part.strip()) >= 25]
+        sentences = sentences[:max_sentences]
+    return sentences
 
 
-def find_regex_matches(text: str, patterns: list[str]) -> list[str]:
-    normalized = normalize_for_rules(text)
-    matches: list[str] = []
-    for pattern in patterns:
-        if re.search(pattern, normalized, flags=re.IGNORECASE):
-            if pattern not in matches:
-                matches.append(pattern)
-    return matches
+def _extract_evidence_sentences(
+    text: str,
+    active_categories: list[str],
+    classifier,
+    max_sentences: int,
+    max_categories: int = 3,
+) -> dict[str, list[dict]]:
+    sentences = _split_sentences(text, max_sentences=max_sentences)
+    if not sentences or not active_categories:
+        return {}
+
+    evidence: dict[str, list[dict]] = {}
+    selected_categories = active_categories[:max_categories]
+    for category_key in selected_categories:
+        label = MANIPULATION_LABELS[category_key]
+        best: dict | None = None
+        for sentence in sentences:
+            scores = _score_zero_shot(sentence, [label], classifier)
+            score = scores.get(label, 0.0)
+            if best is None or score > best["score"]:
+                best = {"sentence": sentence, "score": round(float(score), 4)}
+        if best is not None:
+            evidence[category_key] = [best]
+    return evidence
 
 
-def extract_manipulation_features(text: str) -> dict:
-    manipulation_matches: dict[str, list[str]] = {}
-    manipulation_flags: dict[str, bool] = {}
+def extract_manipulation_features(
+    text: str,
+    model_manager,
+    threshold: float = 0.55,
+    max_chars: int = 1500,
+    include_evidence: bool = False,
+    max_evidence_sentences: int = 8,
+) -> dict:
+    """Extracts manipulation-related linguistic features with a multilingual NLI model.
 
-    for category, keywords in RULES_KEYWORDS.items():
-        keyword_matches = find_keyword_matches(text, keywords)
-        manipulation_matches[category] = keyword_matches
-        manipulation_flags[category] = len(keyword_matches) > 0
+    The function returns probabilistic indicators. They are analytical features, not proof
+    that the news item is fake.
+    """
+    base_text = (text or "")[:max_chars]
+    labels = list(MANIPULATION_LABELS.values())
+    label_to_key = {label: key for key, label in MANIPULATION_LABELS.items()}
 
-    for category, patterns in RULES_REGEX.items():
-        regex_matches = find_regex_matches(text, patterns)
-        existing = manipulation_matches.get(category, [])
-        combined = existing + [item for item in regex_matches if item not in existing]
-        manipulation_matches[category] = combined
-        manipulation_flags[category] = len(combined) > 0
+    empty_result = {
+        "manipulation_flags": {key: False for key in MANIPULATION_LABELS},
+        "manipulation_scores": {key: 0.0 for key in MANIPULATION_LABELS},
+        "manipulation_score": 0,
+        "manipulation_threshold": threshold,
+        "manipulation_evidence_sentences": {},
+        "manipulation_matches": {},
+    }
 
-    punctuation_matches: list[str] = []
-    raw_text = text or ""
-    for marker in ["!!!", "???", "?!", "!?"]:
-        if marker in raw_text:
-            punctuation_matches.append(marker)
-    exclamation_count = raw_text.count("!")
-    if exclamation_count > 3:
-        punctuation_matches.append("!>3")
+    if not base_text.strip():
+        return empty_result
 
-    manipulation_matches["excessive_punctuation"] = punctuation_matches
-    manipulation_flags["excessive_punctuation"] = len(punctuation_matches) > 0
+    try:
+        classifier = model_manager.get_manipulation_pipeline()
+        raw_scores = _score_zero_shot(base_text, labels, classifier)
+    except Exception as exc:
+        result = dict(empty_result)
+        result["manipulation_error"] = str(exc)
+        return result
 
-    manipulation_score = sum(1 for flag in manipulation_flags.values() if flag)
+    scores = {key: 0.0 for key in MANIPULATION_LABELS}
+    for label, score in raw_scores.items():
+        key = label_to_key.get(label)
+        if key:
+            scores[key] = round(float(score), 4)
+
+    flags = {key: value >= threshold for key, value in scores.items()}
+    active_categories = [key for key, is_active in flags.items() if is_active]
+
+    evidence = {}
+    if include_evidence and active_categories:
+        evidence = _extract_evidence_sentences(
+            base_text,
+            active_categories=active_categories,
+            classifier=classifier,
+            max_sentences=max_evidence_sentences,
+        )
+
+    # Compatibility field for older demonstration scripts.
+    matches = {
+        key: [item["sentence"] for item in value]
+        for key, value in evidence.items()
+        if isinstance(value, list)
+    }
 
     return {
-        "manipulation_flags": manipulation_flags,
-        "manipulation_matches": manipulation_matches,
-        "manipulation_score": manipulation_score,
+        "manipulation_flags": flags,
+        "manipulation_scores": scores,
+        "manipulation_score": sum(1 for value in flags.values() if value),
+        "manipulation_threshold": threshold,
+        "manipulation_evidence_sentences": evidence,
+        "manipulation_matches": matches,
     }

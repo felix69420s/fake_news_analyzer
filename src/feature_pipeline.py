@@ -1,5 +1,6 @@
-from src.emotion_features import extract_emotional_profile
+from src.config import DEFAULT_MANIPULATION_MAX_CHARS, DEFAULT_MANIPULATION_THRESHOLD
 from src.manipulation_features import extract_manipulation_features
+from src.emotion_features import extract_emotional_profile
 from src.ner_features import extract_ner_features
 from src.schemas import InputNewsRecord, OutputNewsRecord
 from src.text_cleaning import (
@@ -11,11 +12,16 @@ from src.text_cleaning import (
 )
 
 
-def process_record(record: InputNewsRecord, model_manager) -> OutputNewsRecord:
+def process_record(
+    record: InputNewsRecord,
+    model_manager,
+    manipulation_threshold: float = DEFAULT_MANIPULATION_THRESHOLD,
+    manipulation_max_chars: int = DEFAULT_MANIPULATION_MAX_CHARS,
+    include_evidence: bool = False,
+) -> OutputNewsRecord:
     title = record.title or ""
     lead = record.lead or ""
     text = record.text or ""
-
     full_text = build_full_text(title=title, lead=lead, text=text)
     normalized_text = normalize_text(full_text) if full_text else ""
     text_hash = make_text_hash(normalized_text) if normalized_text else ""
@@ -25,7 +31,13 @@ def process_record(record: InputNewsRecord, model_manager) -> OutputNewsRecord:
     if normalized_text:
         ner_features = extract_ner_features(normalized_text, model_manager)
         emotional_profile = extract_emotional_profile(normalized_text, model_manager)
-        manipulation_features = extract_manipulation_features(normalized_text)
+        manipulation_features = extract_manipulation_features(
+            normalized_text,
+            model_manager=model_manager,
+            threshold=manipulation_threshold,
+            max_chars=manipulation_max_chars,
+            include_evidence=include_evidence,
+        )
     else:
         ner_features = {
             "named_entities": [],
@@ -43,24 +55,31 @@ def process_record(record: InputNewsRecord, model_manager) -> OutputNewsRecord:
         emotional_profile = {
             "sentiment_label": "",
             "sentiment_score": 0.0,
-            "emotion_labels": [],
-            "emotion_scores": {},
-            "dominant_emotion": "",
         }
         manipulation_features = {
             "manipulation_flags": {},
-            "manipulation_matches": {},
+            "manipulation_scores": {},
             "manipulation_score": 0,
+            "manipulation_method": "zero_shot_nli",
+            "manipulation_model": "",
+            "manipulation_threshold": manipulation_threshold,
+            "manipulation_evidence_sentences": {},
+            "manipulation_matches": {},
         }
 
     flags_value = manipulation_features.get("manipulation_flags", {})
-    if isinstance(flags_value, dict):
-        manipulation_flags = {str(k): bool(v) for k, v in flags_value.items()}
-    else:
-        manipulation_flags = {}
+    manipulation_flags = {str(k): bool(v) for k, v in flags_value.items()} if isinstance(flags_value, dict) else {}
+
+    scores_value = manipulation_features.get("manipulation_scores", {})
+    manipulation_scores = (
+        {str(k): float(v) for k, v in scores_value.items()} if isinstance(scores_value, dict) else {}
+    )
 
     matches_value = manipulation_features.get("manipulation_matches", {})
     manipulation_matches = matches_value if isinstance(matches_value, dict) else {}
+
+    evidence_value = manipulation_features.get("manipulation_evidence_sentences", {})
+    manipulation_evidence = evidence_value if isinstance(evidence_value, dict) else {}
 
     return OutputNewsRecord(
         id=record.id,
@@ -92,10 +111,14 @@ def process_record(record: InputNewsRecord, model_manager) -> OutputNewsRecord:
         media_count=ner_features.get("media_count", 0),
         sentiment_label=emotional_profile.get("sentiment_label", ""),
         sentiment_score=emotional_profile.get("sentiment_score", 0.0),
-        emotion_labels=emotional_profile.get("emotion_labels", []),
-        emotion_scores=emotional_profile.get("emotion_scores", {}),
-        dominant_emotion=emotional_profile.get("dominant_emotion", ""),
         manipulation_flags=manipulation_flags,
-        manipulation_matches=manipulation_matches,
+        manipulation_scores=manipulation_scores,
         manipulation_score=manipulation_features.get("manipulation_score", 0),
+        manipulation_method=manipulation_features.get("manipulation_method", ""),
+        manipulation_model=manipulation_features.get("manipulation_model", ""),
+        manipulation_threshold=manipulation_features.get(
+            "manipulation_threshold", manipulation_threshold
+        ),
+        manipulation_evidence_sentences=manipulation_evidence,
+        manipulation_matches=manipulation_matches,
     )
