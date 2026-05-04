@@ -7,8 +7,8 @@ RAW_DATA_DIR = DATA_DIR / "raw"
 INTERIM_DATA_DIR = DATA_DIR / "interim"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 
-MAIN_DATASET_NAME = "baiangali/fake_news"
-LENTA_DATASET_NAME = "data-silence/lenta.ru_2-extended"
+KAGGLE_DATASET_DIR = RAW_DATA_DIR / "fake_real_news_ru"
+KAGGLE_DATASET_URL = "https://www.kaggle.com/datasets/morfifinka/fake-real-news-ru"
 
 NER_MODEL_NAME = "r1char9/ner-rubert-tiny-news"
 EMOTION_MODEL_NAME = "cointegrated/rubert-tiny2-cedr-emotion-detection"
