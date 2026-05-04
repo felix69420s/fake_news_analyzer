@@ -46,6 +46,6 @@ def extract_sentiment_features(text: str, model_manager) -> dict:
         return result
 
 
-def extract_emotional_profile(text: str, model_manager) -> dict:
+def extract_sentiment_profile(text: str, model_manager) -> dict:
     sentiment_features = extract_sentiment_features(text, model_manager)
     return {**sentiment_features}

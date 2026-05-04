@@ -1,6 +1,6 @@
 from src.config import DEFAULT_MANIPULATION_MAX_CHARS, DEFAULT_MANIPULATION_THRESHOLD
 from src.manipulation_features import extract_manipulation_features
-from src.emotion_features import extract_emotional_profile
+from src.sentiment_features import extract_sentiment_profile
 from src.ner_features import extract_ner_features
 from src.schemas import InputNewsRecord, OutputNewsRecord
 from src.text_cleaning import (
@@ -30,7 +30,7 @@ def process_record(
 
     if normalized_text:
         ner_features = extract_ner_features(normalized_text, model_manager)
-        emotional_profile = extract_emotional_profile(normalized_text, model_manager)
+        sentiment_profile = extract_sentiment_profile(normalized_text, model_manager)
         manipulation_features = extract_manipulation_features(
             normalized_text,
             model_manager=model_manager,
@@ -52,7 +52,7 @@ def process_record(
             "geopolitical_count": 0,
             "media_count": 0,
         }
-        emotional_profile = {
+        sentiment_profile = {
             "sentiment_label": "",
             "sentiment_score": 0.0,
         }
@@ -64,7 +64,6 @@ def process_record(
             "manipulation_model": "",
             "manipulation_threshold": manipulation_threshold,
             "manipulation_evidence_sentences": {},
-            "manipulation_matches": {},
         }
 
     flags_value = manipulation_features.get("manipulation_flags", {})
@@ -74,9 +73,6 @@ def process_record(
     manipulation_scores = (
         {str(k): float(v) for k, v in scores_value.items()} if isinstance(scores_value, dict) else {}
     )
-
-    matches_value = manipulation_features.get("manipulation_matches", {})
-    manipulation_matches = matches_value if isinstance(matches_value, dict) else {}
 
     evidence_value = manipulation_features.get("manipulation_evidence_sentences", {})
     manipulation_evidence = evidence_value if isinstance(evidence_value, dict) else {}
@@ -109,8 +105,8 @@ def process_record(
         locations_count=ner_features.get("locations_count", 0),
         geopolitical_count=ner_features.get("geopolitical_count", 0),
         media_count=ner_features.get("media_count", 0),
-        sentiment_label=emotional_profile.get("sentiment_label", ""),
-        sentiment_score=emotional_profile.get("sentiment_score", 0.0),
+        sentiment_label=sentiment_profile.get("sentiment_label", ""),
+        sentiment_score=sentiment_profile.get("sentiment_score", 0.0),
         manipulation_flags=manipulation_flags,
         manipulation_scores=manipulation_scores,
         manipulation_score=manipulation_features.get("manipulation_score", 0),
@@ -120,5 +116,4 @@ def process_record(
             "manipulation_threshold", manipulation_threshold
         ),
         manipulation_evidence_sentences=manipulation_evidence,
-        manipulation_matches=manipulation_matches,
     )
