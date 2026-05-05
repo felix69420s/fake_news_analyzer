@@ -54,8 +54,6 @@ class OutputNewsRecord(BaseModel):
     manipulation_flags: dict[str, bool] = Field(default_factory=dict)
     manipulation_scores: dict[str, float] = Field(default_factory=dict)
     manipulation_score: float = 0.0
-    manipulation_method: str | None = ""
-    manipulation_model: str | None = ""
     manipulation_threshold: float = 0.0
     manipulation_evidence_sentences: dict[str, list[dict[str, Any]]] = Field(default_factory=dict)
 

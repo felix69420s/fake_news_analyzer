@@ -60,8 +60,6 @@ def process_record(
             "manipulation_flags": {},
             "manipulation_scores": {},
             "manipulation_score": 0,
-            "manipulation_method": "zero_shot_nli",
-            "manipulation_model": "",
             "manipulation_threshold": manipulation_threshold,
             "manipulation_evidence_sentences": {},
         }
@@ -110,8 +108,6 @@ def process_record(
         manipulation_flags=manipulation_flags,
         manipulation_scores=manipulation_scores,
         manipulation_score=manipulation_features.get("manipulation_score", 0),
-        manipulation_method=manipulation_features.get("manipulation_method", ""),
-        manipulation_model=manipulation_features.get("manipulation_model", ""),
         manipulation_threshold=manipulation_features.get(
             "manipulation_threshold", manipulation_threshold
         ),
