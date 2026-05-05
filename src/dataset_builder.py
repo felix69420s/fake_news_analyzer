@@ -50,9 +50,58 @@ def build_analytical_dataset(
     return records_to_dataframe(processed)
 
 
+def _parse_json_cell(value):
+    if not isinstance(value, str):
+        return value
+
+    stripped = value.strip()
+
+    if not stripped:
+        return value
+
+    if not (
+            stripped.startswith("{")
+            or stripped.startswith("[")
+    ):
+        return value
+
+    try:
+        return json.loads(stripped)
+    except json.JSONDecodeError:
+        return value
+
+
+def _dataframe_to_readable_records(df: pd.DataFrame, limit: int = 3) -> list[dict]:
+    records = df.head(limit).to_dict(orient="records")
+
+    readable_records = []
+
+    for record in records:
+        readable_record = {}
+
+        for key, value in record.items():
+            readable_record[key] = _parse_json_cell(value)
+
+        readable_records.append(readable_record)
+
+    return readable_records
+
+
 def save_dataset(df: pd.DataFrame, output_path: str | Path) -> None:
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
+
     df.to_csv(output, index=False, encoding="utf-8-sig")
+
     jsonl_path = output.with_suffix(".jsonl")
     df.to_json(jsonl_path, orient="records", lines=True, force_ascii=False)
+
+    demo_json_path = output.with_suffix(".demo.json")
+    demo_records = _dataframe_to_readable_records(df, limit=3)
+
+    with demo_json_path.open("w", encoding="utf-8") as file:
+        json.dump(demo_records, file, ensure_ascii=False, indent=2)
+
+    print(f"CSV saved to: {output}")
+    print(f"JSONL saved to: {jsonl_path}")
+    print(f"Readable demo JSON saved to: {demo_json_path}")
